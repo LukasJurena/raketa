@@ -1,0 +1,147 @@
+#include <SDL.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+typedef enum {NAKLADNI, OSOBNI, SANITKA, POPELAR, CLOVEK, DOLAR  } tTypObjektu;
+typedef struct {
+    int x, y, z, w, h, dx, dy;
+    tTypObjektu typ;
+} tGrafickyObjekt;
+
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
+
+// Globální proměnná pro kreslení (aby studenti nemuseli řešit ukazatele v parametrech)
+SDL_Renderer *renderer = NULL;
+
+
+void nakresli_kruh(int x, int y, float radius, int r, int g, int b) {
+    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    double pi = 3.14159265359;
+    int precision = 400;
+    double step = pi / (double) (precision - 1);
+    for (int i = 0; i < precision; i++) {
+        float x1 = cos(-i * step) * radius + x;
+        float y1 = sin(-i * step) * radius + y;
+        float x2 = cos(i * step) * radius + x;
+        float y2 = sin(i * step) * radius + y;
+        SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+    }
+}
+
+// Funkce pro vykreslení plného obdélníku
+void nakresli_blok(int x, int y, int sirka, int vyska, int r, int g, int b) {
+    // Nápověda k SDL příkazům:
+    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    SDL_Rect rect = {x, y, sirka, vyska};
+    SDL_RenderFillRect(renderer, &rect);
+}
+
+// Úkol 1: Napište funkci pro kresleni pěkného auta pomocí nakresli_blok() a nakresli_kruh()
+void nakresli_osobni_auto(int x, int y, int velikost) {
+    // ZDE DOPLŇTE KÓD:
+    // Příklad pro blok houkačky s náhodnou barvou:
+    nakresli_blok(x + 50, y - 30, 10, 10, rand() & 255, 0, rand() & 255);
+    nakresli_blok(x, y, 100, 25, 255, 255, 255); //spodni cast
+    nakresli_blok(x + 10, y - 25, 70, 25, 255, 255, 255); //vrchni cast
+    nakresli_blok(x + 17.5, y - 15, 25, 20, 0, 0, 255); //okno
+    nakresli_blok(x + 47.5, y - 15, 25, 20, 0, 0, 255); //druhe okno
+    nakresli_kruh(x + 15, y + 25, 15, 100, 100, 100);
+    nakresli_kruh(x + 15, y + 25, 10, 200, 200, 200);
+    nakresli_kruh(x + 85, y + 25, 15, 100, 100, 100);
+    nakresli_kruh(x + 85, y + 25, 10, 200, 200, 200);
+}
+
+void nakresli_nakladni_auto(int x, int y, int velikost) {
+    // ZDE DOPLŇTE KÓD:
+    // Příklad pro blok houkačky s náhodnou barvou:
+    nakresli_blok(x + 120, y - 40, 10, 10, rand() % 255, rand() % 100, 0);
+    nakresli_blok(x, y, 150, 25, 255, 255, 255); //spodni cast
+    nakresli_blok(x + 100, y - 35, 50, 35, 255, 255, 255); //vrchni cast
+    nakresli_blok(x, y - 35, 100, 35, 0, 255, 0); //vrchni cast cargo
+    nakresli_blok(x + 125, y - 25, 25, 20, 0, 0, 255); //okno
+    nakresli_kruh(x + 15, y + 25, 15, 100, 100, 100);
+    nakresli_kruh(x + 15, y + 25, 10, 200, 200, 200);
+    nakresli_kruh(x + 45, y + 25, 15, 100, 100, 100);
+    nakresli_kruh(x + 45, y + 25, 10, 200, 200, 200);
+    nakresli_kruh(x + 125, y + 25, 15, 100, 100, 100);
+    nakresli_kruh(x + 125, y + 25, 10, 200, 200, 200);
+}
+
+void nakresli_ufo_auto(int x, int y, int velikost) {
+    nakresli_kruh(x + velikost * 1 / 2, y, velikost / 4, 0, 0, 200); //okno
+    nakresli_blok(x, y, velikost, velikost / 4, 255, 255, 255); //spodni cast
+    nakresli_blok(x + velikost * 1 / 2 - (velikost / 3) / 2, y + 25, velikost / 3, velikost, 0, rand() % 155 + 100,
+                  0); //laser beam
+}
+
+void nakresli_dum(int x, int y, int w, int h, int r, int g, int b) {
+    nakresli_blok(x, y, w * 20, h * 20 + 25, r, g, b); //budova
+    for (int i = 0; i < w; i++) {
+        for (int j = 0; j < h; j++) {
+            nakresli_blok(x + i * 20 + 5, y + j * 20 + 5, 10, 10, 0, 0, 255); //okna
+        }
+    }
+    nakresli_blok(x + w * 20 / 2 - 5, y + h * 20 + 5, 10, 20, 255, 100, 100);
+}
+
+int main(int argc, char *argv[]) {
+    // Inicializace SDL (ignorujte)
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) return 1;
+    SDL_Window *window = SDL_CreateWindow("Proceduralni Mesto", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                          WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    srand((unsigned int) time(NULL));
+
+    bool running = true;
+    SDL_Event event;
+    bool redraw = true;
+    int x = 0;
+    int z = 0;
+    int y = 0;
+    while (running) {
+        // Zpracování zavření okna a jakékoli klávesy pro redraw:
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) running = 0;
+            if (event.type == SDL_KEYDOWN) redraw = !redraw;
+        }
+
+        if (redraw) {
+            // Vymazání obrazovky (noční obloha):
+            SDL_SetRenderDrawColor(renderer, 15, 15, 30, 255);
+            SDL_RenderClear(renderer);
+            // =====================================================================
+            // ÚKOL 2: kresli několik aut v pohybu
+            // =====================================================================
+            nakresli_osobni_auto(y + 0.5, 525, 200);
+            nakresli_nakladni_auto(x, 550, 100);
+            nakresli_ufo_auto(z, 50, 100);
+            x = (x + 2) % 512;
+            y = x * 3 / 2;
+            z = x / 2;
+            // ZDE DOPLŇTE KÓD:
+
+            // =====================================================================
+            // ÚKOL 3: Smaž primitivní obdélníky, místo nich volej funkci nakresli_dum(...)
+            // Tuto funkci musíš napřed samostatně naprogramovat.
+            // =====================================================================
+            // ZDE DOPLŇTE KÓD:
+
+            nakresli_dum(0, 350, 5, 2, 200, 200, 200);
+            nakresli_dum(150, 350, 7, 4, 100, 50, 0);
+            nakresli_dum(300, 30, 5, 20, 0, 200, 255);
+            nakresli_dum(450, 125, 5, 15, 0, 100, 00);
+
+
+            SDL_RenderPresent(renderer);
+        }
+    }
+
+    // 3. Úklid paměti na konci programu
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
